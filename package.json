@@ -1,0 +1,30 @@
+{
+  "name": "gadm-ingester",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "cheerio": "^0.22.0",
+    "fs": "^0.0.1-security",
+    "request": "^2.79.0",
+    "shapefile": "^0.5.9",
+    "unzip": "^0.1.11",
+    "vorpal": "^1.11.4",
+    "vorpal-log": "^1.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js" 
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://hari@grapelime.in@github.com/bookyacom/gadm-ingester.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bookyacom/gadm-ingester/issues"
+  },
+  "homepage": "https://github.com/bookyacom/gadm-ingester#readme"
+}

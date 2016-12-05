@@ -6,16 +6,20 @@
   "dependencies": {
     "cheerio": "^0.22.0",
     "fs": "^0.0.1-security",
+    "got": "^6.6.3",
     "request": "^2.79.0",
     "shapefile": "^0.5.9",
     "unzip": "^0.1.11",
     "vorpal": "^1.11.4",
-    "vorpal-log": "^1.1.0"
+    "vorpal-log": "^1.1.0",
+    "xo": "^0.17.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "xo": "^0.17.1"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js" 
+    "test": "xo",
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",

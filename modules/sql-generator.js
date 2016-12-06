@@ -69,13 +69,15 @@ function convertShapeFileToSql(file) {
 		.then(source => source.read()
 			.then(function readSourceFile(result) {
 				if (result.done) {
+					settings.logger.log('Completed sql conversion for file' + file);
 					return resolve(sql);
 				}
 				sql = sql + ' ST_GeomFromGeoJSON(' + JSON.stringify(result.value.geometry) + ')';
 				return source.read().then(readSourceFile);
 			}))
 		.catch(err => {
-			settings.logger.error(err.stack);
+			settings.logger.log('Failed sql conversion for file' + file);
+			settings.logger.log(err.stack);
 		});
 	});
 }

@@ -21,8 +21,8 @@ function download() {
 	return new Promise((resolve, reject) => {
 		return got(settings.url)
             .then(response => {
-	let $ = cheerio.load('<html><body><p><a href="http://gadm.org/gadmcountry">Country</a><br><select name="cnt"><option value="AFG_Afghanistan_3">Afghanistan</option><option value="XAD_Akrotiri and Dhekelia_2">Akrotiri and Dhekelia</option></select></p></body></html>');
-	// let $ = cheerio.load(response.body);
+	// let $ = cheerio.load('<html><body><p><a href="http://gadm.org/gadmcountry">Country</a><br><select name="cnt"><option value="IND_India_4">India</option><option value="XAD_Akrotiri and Dhekelia_2">Akrotiri and Dhekelia</option></select></p></body></html>');
+	let $ = cheerio.load(response.body);
 	let countryCount = 0;
 	let completedCount = 0;
 	let failedCount = 0;
@@ -67,6 +67,10 @@ function downloadZip(fileName, countryName) {
 			return resolve('Completed downloading ' + countryName);
 		});
 		downloadRequest.on('error', error => {
+			file.close();
+			return reject('Error on downloading ' + countryName + ' ' + error);
+		});
+		downloadRequest.on('end', error => {
 			file.close();
 			return reject('Error on downloading ' + countryName + ' ' + error);
 		});

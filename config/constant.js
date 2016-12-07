@@ -3,7 +3,8 @@ const Settings = {
 	downloadUrl: 'http://biogeo.ucdavis.edu/data/gadm2.8/shp/XXXX_adm_shp.zip',
 	downloadPath: './downloads/zip/',
 	sqlPath: './downloads/sql/',
-	logger: null
+	logger: null,
+	schemaFile: './config/schema.sql'
 
 };
 module.exports = Settings;

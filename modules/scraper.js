@@ -1,6 +1,7 @@
-let fs = require('fs');
-let cheerio = require('cheerio');
+const fs = require('fs');
+const cheerio = require('cheerio');
 const got = require('got');
+const Queue = require('promise-queue');
 const settings = require('../config/constant');
 
 module.exports = scraper();
@@ -20,26 +21,29 @@ function scraper() {
 function download() {
 	return new Promise((resolve, reject) => {
 		return got(settings.url)
-            .then(response => {
-	// let $ = cheerio.load('<html><body><p><a href="http://gadm.org/gadmcountry">Country</a><br><select name="cnt"><option value="IND_India_4">India</option><option value="XAD_Akrotiri and Dhekelia_2">Akrotiri and Dhekelia</option></select></p></body></html>');
-	let $ = cheerio.load(response.body);
+    .then(response => {
+	// const $ = cheerio.load('<html><body><p><a href="http://gadm.org/gadmcountry">Country</a><br><select name="cnt"><option value="INDx_India_4">India</option><option value="XAD_Akrotiri and Dhekelia_2">Akrotiri and Dhekelia</option></select></p></body></html>');
+	const $ = cheerio.load(response.body);
+	const downloadQueue = new Queue(5, Infinity);
 	let countryCount = 0;
 	let completedCount = 0;
 	let failedCount = 0;
 	$('select[name=cnt] option').each(function () {
-		let optionValue = $(this).attr('value');
-		let optionValueSplit = optionValue.split('_');
+		const optionValue = $(this).attr('value');
+		const optionValueSplit = optionValue.split('_');
 		countryCount++;
-		downloadZip(optionValueSplit[0], optionValueSplit[1])
-        .then(message => {
-	settings.logger.info(message);
+		downloadQueue.add(() => {
+			return downloadZip(optionValueSplit[0], optionValueSplit[1]);
+		})
+    .then(status => {
+	settings.logger.info(status.message);
 	completedCount++;
 	if (countryCount === (completedCount + failedCount)) {
 		return resolve('Completed Downloading Sucess count ' + completedCount + ' Failed Count ' + failedCount);
 	}
 })
-        .catch(error => {
-	settings.logger.info(error);
+    .catch(status => {
+	settings.logger.info(status.message);
 	failedCount++;
 	if (countryCount === (completedCount + failedCount)) {
 		return resolve('Completed Downloading Sucess count ' + completedCount + ' Failed Count ' + failedCount);
@@ -47,7 +51,7 @@ function download() {
 });
 	});
 })
-        .catch(error => {
+    .catch(error => {
 	return reject(error);
 });
 	});
@@ -60,19 +64,21 @@ function download() {
 function downloadZip(fileName, countryName) {
 	return new Promise((resolve, reject) => {
 		settings.logger.info('Starting downloading ' + countryName);
-		let file = fs.createWriteStream(settings.downloadPath + countryName.replace(/ /g, '_') + '.zip');
-		let downloadRequest = got.stream(settings.downloadUrl.replace('XXXX', fileName)).pipe(file);
-		downloadRequest.on('finish', response => {
+		const file = fs.createWriteStream(settings.downloadPath + countryName.replace(/ /g, '_') + '.zip');
+		const downloadRequest = got.stream(settings.downloadUrl.replace('XXXX', fileName));
+		const status = {};
+		downloadRequest.pipe(file).on('finish', () => {
 			file.close();
-			return resolve('Completed downloading ' + countryName);
+			status.message = 'Completed downloading ' + countryName;
+			status.sucess = true;
+			resolve(status);
 		});
 		downloadRequest.on('error', error => {
 			file.close();
-			return reject('Error on downloading ' + countryName + ' ' + error);
-		});
-		downloadRequest.on('end', error => {
-			file.close();
-			return reject('Error on downloading ' + countryName + ' ' + error);
+			fs.unlinkSync(settings.downloadPath + countryName.replace(/ /g, '_') + '.zip');
+			status.message = 'Error on downloading ' + countryName + ' ' + error;
+			status.sucess = false;
+			reject(status);
 		});
 	});
 }

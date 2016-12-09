@@ -8,8 +8,8 @@ const postgreSql = require('./modules/postgre-sql');
  * Initialising vopral to work with vorpal Logger
  */
 vorpal.use(vorpalLog)
-        .delimiter('gadm-ingester $')
-        .show();
+ .delimiter('gadm-ingester $')
+ .show();
 
 settings.logger = vorpal.logger;
 /*
@@ -17,8 +17,8 @@ settings.logger = vorpal.logger;
  */
 
 vorpal
-        .command('download', 'Download shape file from http://gadm.org/ to download/zip folder')
-        .action((args, callback) => {
+ .command('download', 'Download shape file from http://gadm.org/ to download/zip folder')
+ .action((args, callback) => {
 	settings.logger.info('Starting Downloading');
 	scraper.download().then(message => {
 		console.log(message);
@@ -30,8 +30,9 @@ vorpal
 });
 
 vorpal
-        .command('generateSql', 'Generate postgresql from downloaded shape file')
-        .action(function (args, callback) {
+ .command('generateSql', 'Generate postgresql from downloaded shape file')
+ .action((args, callback) => {
+	settings.logger.info('Starting generating sql');
 	sqlGenerator.generate().then(message => {
 		console.log(message);
 		callback();
@@ -42,13 +43,14 @@ vorpal
 });
 
 vorpal
-        .command('importSql', 'Export data to postgresql')
-        .option('-h, --hostname <hostName>', 'postgresql Host Name.')
-        .option('-u, --user <userName>', 'postgresql User Name.')
-        .option('-p, --password <Password>', 'postgresql Password.')
-        .option('-d, --database <databaseName>', 'postgresql Database Name.')
-        .option('-t, --table <tableName>', 'postgresql table Name.')
-        .action(function (args, callback) {
+ .command('importSql', 'Export data to postgresql')
+ .option('-h, --hostname <hostName>', 'postgresql Host Name.')
+ .option('-u, --user <userName>', 'postgresql User Name.')
+ .option('-p, --password <Password>', 'postgresql Password.')
+ .option('-d, --database <databaseName>', 'postgresql Database Name.')
+ .option('-t, --table <tableName>', 'postgresql table Name.')
+ .action((args, callback) => {
+	settings.logger.info('Starting importing sql');
 	postgreSql.importSql(args.options).then(message => {
 		console.log(message);
 		callback();

@@ -22,8 +22,12 @@ function download() {
 	return new Promise((resolve, reject) => {
 		return got(settings.url)
     .then(response => {
-	// const $ = cheerio.load('<html><body><p><a href="http://gadm.org/gadmcountry">Country</a><br><select name="cnt"><option value="INDx_India_4">India</option><option value="XAD_Akrotiri and Dhekelia_2">Akrotiri and Dhekelia</option></select></p></body></html>');
-	const $ = cheerio.load(response.body);
+	let $ = '';
+	if (process.env.NODE_ENV === 'test') {
+		$ = cheerio.load('<html><body><p><a href="http://gadm.org/gadmcountry">Country</a><br><select name="cnt"><option value="ZWE_Zimbabwe_3">Zimbabwe</option></select></p></body></html>');
+	}	else {
+		$ = cheerio.load(response.body);
+	}
 	const downloadQueue = new Queue(5, Infinity);
 	let countryCount = 0;
 	let completedCount = 0;
@@ -35,15 +39,19 @@ function download() {
 		downloadQueue.add(() => {
 			return downloadZip(optionValueSplit[0], optionValueSplit[1]);
 		})
-    .then(status => {
-	settings.logger.info(status.message);
+      .then(status => {
+	if (process.env.NODE_ENV !== 'test') {
+		settings.logger.info(status.message);
+	}
 	completedCount++;
 	if (countryCount === (completedCount + failedCount)) {
 		return resolve('Completed Downloading Sucess count ' + completedCount + ' Failed Count ' + failedCount);
 	}
 })
-    .catch(status => {
-	settings.logger.info(status.message);
+      .catch(status => {
+	if (process.env.NODE_ENV !== 'test') {
+		settings.logger.info(status.message);
+	}
 	failedCount++;
 	if (countryCount === (completedCount + failedCount)) {
 		return resolve('Completed Downloading Sucess count ' + completedCount + ' Failed Count ' + failedCount);
@@ -63,22 +71,30 @@ function download() {
 
 function downloadZip(fileName, countryName) {
 	return new Promise((resolve, reject) => {
-		settings.logger.info('Starting downloading ' + countryName);
+		const status = {};
+		if (process.env.NODE_ENV !== 'test') {
+			settings.logger.info('Starting downloading ' + countryName);
+		}
+		if (!fileName || !countryName) {
+			status.message = 'Error with filename';
+			status.sucess = false;
+			return reject(status);
+		}
 		const file = fs.createWriteStream(settings.downloadPath + countryName.replace(/ /g, '_') + '.zip');
 		const downloadRequest = got.stream(settings.downloadUrl.replace('XXXX', fileName));
-		const status = {};
+
 		downloadRequest.pipe(file).on('finish', () => {
 			file.close();
 			status.message = 'Completed downloading ' + countryName;
 			status.sucess = true;
-			resolve(status);
+			return resolve(status);
 		});
 		downloadRequest.on('error', error => {
 			file.close();
 			fs.unlinkSync(settings.downloadPath + countryName.replace(/ /g, '_') + '.zip');
 			status.message = 'Error on downloading ' + countryName + ' ' + error;
 			status.sucess = false;
-			reject(status);
+			return reject(status);
 		});
 	});
 }

@@ -38,19 +38,19 @@ function importSql(options) {
 			settings.logger.info('Sucessfully imported schema File');
 			fs.readdir(settings.sqlPath, (error, folders) => {
 				if (error) {
-					reject(error);
+					return reject(error);
 				}
 				folders.forEach(folder => {
 					if (fs.lstatSync(settings.sqlPath + folder).isDirectory()) {
-						processSqlFolder(folder, resolve, reject, options);
+						return processSqlFolder(folder, resolve, reject, options);
 					}
 				});
 			});
 		})
-   .catch(err => {
+    .catch(err => {
 	settings.logger.info('Schema Export Failed');
 	settings.logger.info(err);
-	resolve('Schema Error');
+	return resolve('Schema Error');
 });
 	});
 }
@@ -61,27 +61,29 @@ Function for processing sql folder
 function processSqlFolder(folder, resolve, reject, options) {
 	fs.readdir(settings.sqlPath + folder + '/', (error, files) => {
 		if (error) {
-			reject(error);
+			return reject(error);
 		}
 		files.filter(file => {
 			return file.substr(-4) === '.sql';
 		})
-       .forEach(file => {
+   .forEach(file => {
 	filesCount++;
-	const sqlFile = settings.sqlPath + folder + '/' + file;
+	let sqlFile = settings.sqlPath + folder + '/' + file;
 	importQueue.add(() => {
 		return importSqlFromFile(sqlFile, options);
 	})
-    .then(() => {
+     .then(() => {
 	sucessImportCount++;
 	settings.logger.info('Sucessfull Import For Counrty ' + folder.replace(/_/g, ' ') + ' file ' + sqlFile);
+	sqlFile = '';
 	if (filesCount === sucessImportCount + failedImportCount) {
 		return resolve('Completed sql generation sucess count ' + sucessImportCount + ' Failed Count ' + failedImportCount);
 	}
 })
-.catch(() => {
+     .catch(() => {
 	failedImportCount++;
 	settings.logger.info('Failed Import For Counrty ' + folder.replace(/_/, ' ') + ' file ' + sqlFile);
+	sqlFile = '';
 	if (filesCount === sucessImportCount + failedImportCount) {
 		return resolve('Completed sql generation sucess count ' + sucessImportCount + ' Failed Count ' + failedImportCount);
 	}
@@ -99,7 +101,6 @@ function importSqlFromFile(file, options)	{
 		const status = {};
 		let sqlQuey = '';
 		settings.logger.info('Starting processing' + file);
-
 		pool.connect((err, client, done) => {
 			const lr = new LineByLineReader(file);
 
@@ -107,6 +108,7 @@ function importSqlFromFile(file, options)	{
 				done();
 				status.sucess = false;
 				status.message = 'Error reading file ' + err;
+				sqlQuey = '';
 				return reject(status);
 			});
 
@@ -117,7 +119,8 @@ function importSqlFromFile(file, options)	{
 					status.sucess = false;
 					status.message = 'error fetching client from pool ' + err;
 					settings.logger.info(status);
-					lr.resume();
+					sqlQuey = '';
+					return reject(status);
 				}
 				client.query(sqlQuey, () => {
 					lr.resume();
@@ -125,6 +128,7 @@ function importSqlFromFile(file, options)	{
 
 				pool.on('error', err => {
 					done();
+					sqlQuey = '';
 					status.sucess = false;
 					status.message = 'idle client error ' + err.message;
 					settings.logger.info(status);
@@ -133,6 +137,7 @@ function importSqlFromFile(file, options)	{
 
 			lr.on('end', () => {
 				done();
+				sqlQuey = '';
 				status.sucess = true;
 				status.message = 'Sucess on importing sql';
 				return resolve(status);

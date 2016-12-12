@@ -8,7 +8,10 @@ module.exports = sqlGenerator();
 
 function sqlGenerator() {
 	const sqlGenerator = {
-		generate
+		generate,
+		processShapeFileFromZip,
+		processShapeFileInFolder,
+		convertShapeFileToSql
 	};
 	return sqlGenerator;
 }
@@ -35,16 +38,20 @@ function generate() {
 		return processShapeFileFromZip(file);
 	})
         .then(status => {
-	settings.logger.info(status.message);
-	settings.logger.info('Sql generation pending folders ' + (processQueue.getQueueLength() + processQueue.getPendingLength()));
+	if (process.env.NODE_ENV !== 'test') {
+		settings.logger.info(status.message);
+		settings.logger.info('Sql generation pending folders ' + (processQueue.getQueueLength() + processQueue.getPendingLength()));
+	}
 	completedZipCount++;
 	if (totalZipCount === (completedZipCount + failedZipCount)) {
 		return resolve('Completed sql generation sucess count ' + completedZipCount + ' Failed Count ' + failedZipCount);
 	}
 })
         .catch(err => {
-	settings.logger.info(err.message);
-	settings.logger.info('Sql generation pending folders ' + (processQueue.getQueueLength() + processQueue.getPendingLength()));
+	if (process.env.NODE_ENV !== 'test') {
+		settings.logger.info(err.message);
+		settings.logger.info('Sql generation pending folders ' + (processQueue.getQueueLength() + processQueue.getPendingLength()));
+	}
 	failedZipCount++;
 	if (totalZipCount === (completedZipCount + failedZipCount)) {
 		return resolve('Completed sql generation sucess count ' + completedZipCount + ' Failed Count ' + failedZipCount);
@@ -143,7 +150,9 @@ function convertShapeFileToSql(file, folderName, fileName) {
     .then(source => source.read()
      .then(function readSourceFile(result) {
 	if (result.done) {
-		settings.logger.info('Completed sql conversion for file ' + file);
+		if (process.env.NODE_ENV !== 'test') {
+			settings.logger.info('Completed sql conversion for file ' + file);
+		}
 		sqlFile.end();
 		return resolve('Completed sql conversion for file ' + file);
 	}
@@ -191,7 +200,7 @@ function convertShapeFileToSql(file, folderName, fileName) {
 			sqlFile.write(sql);
 			return source.read().then(readSourceFile);
 		}
-		return resolve(sql);
+		return resolve('Completed sql conversion for file ' + file);
 	}
 }))
     .catch(err => {
